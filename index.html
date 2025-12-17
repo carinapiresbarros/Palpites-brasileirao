@@ -12,7 +12,7 @@
     #app {
       background: white;
       padding: 20px;
-      max-width: 400px;
+      max-width: 500px;
       margin: auto;
       border-radius: 8px;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
@@ -23,27 +23,31 @@
       margin-top: 10px;
       font-size: 16px;
     }
-    button {
-      cursor: pointer;
+    ul {
+      padding-left: 20px;
     }
   </style>
 </head>
 <body>
 
-  <div id="app">
-    <h2>Bolão do Brasileirão</h2>
+<div id="app">
+  <h2>Bolão do Brasileirão</h2>
 
-    <div id="login">
-      <input id="nome" placeholder="Digite seu nome">
-      <button onclick="entrar()">Entrar</button>
-    </div>
-
-    <div id="painel" style="display:none;">
-      <p id="bemvindo"></p>
-      <button onclick="sair()">Sair</button>
-    </div>
+  <div id="login">
+    <input id="nome" placeholder="Digite seu nome">
+    <button onclick="entrar()">Entrar</button>
   </div>
 
-  <script src="script.js"></script>
+  <div id="painel" style="display:none;">
+    <p id="bemvindo"></p>
+
+    <h3>Participantes</h3>
+    <ul id="listaParticipantes"></ul>
+
+    <button onclick="sair()">Sair</button>
+  </div>
+</div>
+
+<script src="script.js"></script>
 </body>
 </html>
