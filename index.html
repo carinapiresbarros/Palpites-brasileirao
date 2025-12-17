@@ -45,6 +45,21 @@
       font-weight: bold;
       margin-left: 10px;
     }
+    /* ESTILO DO BOTÃO RECOMEÇAR */
+    #btnRecomecar {
+      background-color: #f44336;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      margin-top: 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+      display: none; /* Inicialmente escondido */
+    }
+    #btnRecomecar:hover {
+      background-color: #d32f2f;
+    }
   </style>
 </head>
 <body>
@@ -73,6 +88,12 @@
 
     <br>
     <button onclick="sair()">Sair</button>
+    
+    <!-- BOTÃO RECOMEÇAR (SÓ APARECE PARA PIRES) -->
+    <br><br>
+    <button id="btnRecomecar" onclick="recomecarTudo()">
+      🔥 RECOMEÇAR TUDO (APENAS ADM)
+    </button>
   </div>
 </div>
 
