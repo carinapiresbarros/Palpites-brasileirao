@@ -28,8 +28,62 @@ function mostrarPainel() {
   document.getElementById("painel").style.display = "block";
   document.getElementById("bemvindo").innerText = "Bem-vindo, " + usuario;
 
+  // MOSTRAR OU ESCONDER BOTÃO RECOMEÇAR (SÓ PARA PIRES)
+  const btnRecomecar = document.getElementById("btnRecomecar");
+  if (usuario.toLowerCase() === "pires") {
+    btnRecomecar.style.display = "inline-block";
+  } else {
+    btnRecomecar.style.display = "none";
+  }
+
   renderParticipantes();
   renderRodadas();
+}
+
+function recomecarTudo() {
+  const usuario = localStorage.getItem("usuario");
+  
+  // VERIFICA SE É O PIRES (ADM)
+  if (usuario.toLowerCase() !== "pires") {
+    alert("⚠️ Apenas o administrador Pires pode recomeçar tudo!");
+    return;
+  }
+  
+  // CONFIRMAÇÃO 1
+  const confirm1 = confirm("⚠️ ATENÇÃO PIRES! ⚠️\n\nVocê está prestes a APAGAR TODOS os dados:\n\n• Todas as rodadas\n• Todos os jogos\n• Todos os palpites\n• Todos os pontos\n\nApenas os nomes dos participantes serão mantidos.\n\nContinuar?");
+  
+  if (!confirm1) return;
+  
+  // CONFIRMAÇÃO 2 (EXTRA SEGURANÇA)
+  const confirm2 = confirm("🚨 CONFIRMAÇÃO FINAL 🚨\n\nDigite 'SIM' no próximo prompt para confirmar:");
+  
+  if (!confirm2) return;
+  
+  const confirm3 = prompt("Digite SIM (em maiúsculas) para confirmar a exclusão:");
+  
+  if (confirm3 !== "SIM") {
+    alert("❌ Operação cancelada.");
+    return;
+  }
+  
+  // LIMPEZA SELETIVA DO LOCALSTORAGE
+  // Mantém apenas 'participantes' e 'usuario' atual
+  const participantes = JSON.parse(localStorage.getItem("participantes")) || [];
+  const usuarioAtual = localStorage.getItem("usuario");
+  
+  // Limpa tudo
+  localStorage.clear();
+  
+  // Restaura apenas o necessário
+  localStorage.setItem("participantes", JSON.stringify(participantes));
+  if (usuarioAtual) {
+    localStorage.setItem("usuario", usuarioAtual);
+  }
+  
+  alert("✅ Tudo foi recomeçado!\n\nAs rodadas, jogos, palpites e pontos foram removidos.\nOs participantes cadastrados foram mantidos.");
+  
+  // Recarrega a página
+  location.reload();
 }
 
 function renderParticipantes() {
@@ -73,7 +127,6 @@ function salvarResultado(r, j, valor) {
   rodadas[r].jogos[j].resultado = valor;
   localStorage.setItem("rodadas", JSON.stringify(rodadas));
   
-  // Recalcula pontos para todos os usuários
   calcularTodosOsPontos();
   renderRodadas();
 }
@@ -88,7 +141,6 @@ function salvarPalpite(r, j, valor) {
   palpites[usuario][r][j] = valor;
   localStorage.setItem("palpites", JSON.stringify(palpites));
   
-  // Calcula pontos para este usuário
   calcularPontosUsuario(usuario);
   renderRodadas();
 }
@@ -129,22 +181,18 @@ function calcularPontos(usuario) {
 }
 
 function calcularPontosJogo(palpite, resultado) {
-  // Formato esperado: "2x1"
   const [palpiteCasa, palpiteFora] = palpite.split('x').map(Number);
   const [resultadoCasa, resultadoFora] = resultado.split('x').map(Number);
   
-  // Se não for um formato válido, retorna 0
   if (isNaN(palpiteCasa) || isNaN(palpiteFora) || 
       isNaN(resultadoCasa) || isNaN(resultadoFora)) {
     return 0;
   }
   
-  // 3 pontos: palpite exato
   if (palpiteCasa === resultadoCasa && palpiteFora === resultadoFora) {
     return 3;
   }
   
-  // 1 ponto: acertou vencedor/empate
   const palpiteVencedor = 
     palpiteCasa > palpiteFora ? 'casa' :
     palpiteCasa < palpiteFora ? 'fora' : 'empate';
@@ -157,7 +205,6 @@ function calcularPontosJogo(palpite, resultado) {
     return 1;
   }
   
-  // 0 pontos
   return 0;
 }
 
@@ -186,7 +233,6 @@ function renderRodadas() {
   const pontosUsuario = JSON.parse(localStorage.getItem("pontos")) || {};
   const totalUsuario = pontosUsuario[usuario]?.total || 0;
 
-  // Mostrar pontuação total do usuário atual
   if (usuario) {
     container.innerHTML += `<h3>🏆 Sua pontuação total: ${totalUsuario} pontos</h3>`;
   }
@@ -226,5 +272,4 @@ function renderRodadas() {
   });
 }
 
-// Inicializar
 mostrarPainel();
