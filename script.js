@@ -279,4 +279,93 @@ function renderRodadasPalpites() {
   const usuario = localStorage.getItem("usuario");
   const rodadas = JSON.parse(localStorage.getItem("rodadas")) || [];
   const pontosUsuario = JSON.parse(localStorage.getItem("pontos")) || {};
-  const totalUsuario = pontosUsuario[usuario]
+  const totalUsuario = pontosUsuario[usuario]?.total || 0;
+
+  if (usuario) {
+    container.innerHTML += `<h3>🏆 Sua pontuação total: ${totalUsuario} pontos</h3>`;
+  }
+
+  rodadas.forEach((rodada, r) => {
+    const div = document.createElement("div");
+    div.className = "rodada";
+    
+    let html = `<strong>${rodada.nome}</strong><br><br>
+      <input id="casa-${r}" placeholder="Time da casa">
+      <input id="fora-${r}" placeholder="Time visitante">
+      <button onclick="adicionarJogo(${r})">Adicionar jogo</button><br><br>`;
+    
+    rodada.jogos.forEach((jogo, j) => {
+      const pontosJogo = obterPontosUsuario(usuario, r, j);
+      const resultadoExiste = jogo.resultado ? "✅" : "⏳";
+      
+      html += `
+        <div class="jogo">
+          ${resultadoExiste} ${jogo.casa} x ${jogo.fora}
+          <br>
+          📝 Seu palpite: 
+          <input size="4" value="${obterPalpite(r, j)}" 
+            placeholder="0x0"
+            oninput="salvarPalpite(${r}, ${j}, this.value)">
+          ${pontosJogo > 0 ? `<span class="pontos">+${pontosJogo} pontos</span>` : ''}
+          ${jogo.resultado ? `<br><small>Resultado: ${jogo.resultado}</small>` : ''}
+        </div>`;
+    });
+    
+    div.innerHTML = html;
+    container.appendChild(div);
+  });
+}
+
+// FUNÇÃO PARA RENDERIZAR RODADAS NA ABA RESULTADOS (SÓ PIRES)
+function renderRodadasResultados() {
+  const container = document.getElementById("rodadas-resultados");
+  container.innerHTML = "";
+  
+  const usuario = localStorage.getItem("usuario");
+  const rodadas = JSON.parse(localStorage.getItem("rodadas")) || [];
+  
+  // SE NÃO É PIRES, NÃO MOSTRA NADA
+  if (usuario.toLowerCase() !== "pires") {
+    container.innerHTML = "<p>⚠️ Acesso restrito ao administrador.</p>";
+    return;
+  }
+  
+  if (rodadas.length === 0) {
+    container.innerHTML = "<p>Nenhuma rodada criada ainda.</p>";
+    return;
+  }
+  
+  rodadas.forEach((rodada, r) => {
+    const div = document.createElement("div");
+    div.className = "rodada";
+    
+    let html = `<h4>${rodada.nome}</h4>`;
+    
+    if (rodada.jogos.length === 0) {
+      html += `<p>Nenhum jogo nesta rodada.</p>`;
+    } else {
+      rodada.jogos.forEach((jogo, j) => {
+        const resultadoAtual = jogo.resultado || "";
+        
+        html += `
+          <div class="jogo-resultado">
+            <strong>${jogo.casa} x ${jogo.fora}</strong>
+            <br><br>
+            <label>Resultado real:</label>
+            <input class="campo-resultado" size="6" value="${resultadoAtual}" 
+              placeholder="0x0"
+              oninput="salvarResultado(${r}, ${j}, this.value)">
+            <br>
+            <small>Formato: golscasa x golsfora (ex: 2x1)</small>
+            ${resultadoAtual ? `<br><small>✅ Resultado salvo</small>` : ''}
+          </div>`;
+      });
+    }
+    
+    div.innerHTML = html;
+    container.appendChild(div);
+  });
+}
+
+// INICIALIZAR
+mostrarPainel();
