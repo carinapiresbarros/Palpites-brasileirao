@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Bolão do Brasileirão</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f2f2f2;
+      padding: 40px;
+    }
+    #app {
+      background: white;
+      padding: 20px;
+      max-width: 400px;
+      margin: auto;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    input, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      font-size: 16px;
+    }
+    button {
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="app">
+    <h2>Bolão do Brasileirão</h2>
+
+    <div id="login">
+      <input id="nome" placeholder="Digite seu nome">
+      <button onclick="entrar()">Entrar</button>
+    </div>
+
+    <div id="painel" style="display:none;">
+      <p id="bemvindo"></p>
+      <button onclick="sair()">Sair</button>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
