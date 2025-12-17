@@ -68,30 +68,49 @@ function adicionarJogo(index) {
   renderRodadas();
 }
 
+function salvarPalpite(r, j, valor) {
+  const usuario = localStorage.getItem("usuario");
+  let palpites = JSON.parse(localStorage.getItem("palpites")) || {};
+
+  if (!palpites[usuario]) palpites[usuario] = {};
+  if (!palpites[usuario][r]) palpites[usuario][r] = {};
+
+  palpites[usuario][r][j] = valor;
+  localStorage.setItem("palpites", JSON.stringify(palpites));
+}
+
+function obterPalpite(r, j) {
+  const usuario = localStorage.getItem("usuario");
+  let palpites = JSON.parse(localStorage.getItem("palpites")) || {};
+  return palpites[usuario]?.[r]?.[j] || "";
+}
+
 function renderRodadas() {
   const container = document.getElementById("rodadas");
   container.innerHTML = "";
 
   const rodadas = JSON.parse(localStorage.getItem("rodadas")) || [];
 
-  rodadas.forEach((rodada, i) => {
+  rodadas.forEach((rodada, r) => {
     const div = document.createElement("div");
     div.className = "rodada";
 
-    div.innerHTML = `
-      <strong>${rodada.nome}</strong><br><br>
+    let html = `<strong>${rodada.nome}</strong><br><br>
+      <input id="casa-${r}" placeholder="Time da casa">
+      <input id="fora-${r}" placeholder="Time visitante">
+      <button onclick="adicionarJogo(${r})">Adicionar jogo</button><br><br>`;
 
-      <input id="casa-${i}" placeholder="Time da casa">
-      <input id="fora-${i}" placeholder="Time visitante">
-      <button onclick="adicionarJogo(${i})">Adicionar jogo</button>
+    rodada.jogos.forEach((jogo, j) => {
+      html += `
+        <div class="jogo">
+          ⚽ ${jogo.casa} x ${jogo.fora} —
+          Palpite:
+          <input size="2" value="${obterPalpite(r, j)}"
+            oninput="salvarPalpite(${r}, ${j}, this.value)">
+        </div>`;
+    });
 
-      <div>
-        ${rodada.jogos.map(j =>
-          `<div class="jogo">⚽ ${j.casa} x ${j.fora}</div>`
-        ).join("")}
-      </div>
-    `;
-
+    div.innerHTML = html;
     container.appendChild(div);
   });
 }
