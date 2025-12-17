@@ -6,167 +6,338 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f2f2f2;
-      padding: 40px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 20px;
+      min-height: 100vh;
     }
     #app {
       background: white;
-      padding: 20px;
-      max-width: 1000px;
+      padding: 25px;
+      max-width: 1100px;
       margin: auto;
-      border-radius: 8px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      border-radius: 15px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
     }
-    input, button {
-      padding: 6px;
-      margin: 3px;
+    input, button, select {
+      padding: 8px 12px;
+      margin: 5px;
+      border-radius: 6px;
+      border: 1px solid #ddd;
+      font-size: 14px;
     }
-    .rodada {
-      border: 1px solid #ccc;
-      padding: 15px;
-      margin-top: 20px;
-      border-radius: 5px;
-      background: #f9f9f9;
+    button {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      cursor: pointer;
+      transition: 0.3s;
     }
-    .jogo {
-      margin-left: 15px;
-      margin-top: 8px;
-      padding: 8px;
-      border-left: 3px solid #4CAF50;
-      background: white;
-    }
-    .jogo-resultado {
-      margin-left: 15px;
-      margin-top: 8px;
-      padding: 8px;
-      border-left: 3px solid #2196F3;
-      background: #f0f8ff;
-    }
-    .pontos {
-      color: #FF9800;
-      font-weight: bold;
-      margin-left: 10px;
+    button:hover {
+      background: #45a049;
+      transform: translateY(-2px);
     }
     
     /* ESTILO DAS ABAS */
     .abas {
       display: flex;
-      border-bottom: 2px solid #ddd;
-      margin-bottom: 20px;
+      flex-wrap: wrap;
+      border-bottom: 3px solid #e0e0e0;
+      margin-bottom: 25px;
+      background: #f8f9fa;
+      border-radius: 10px 10px 0 0;
+      padding: 5px;
     }
     .aba {
-      padding: 10px 20px;
+      padding: 12px 24px;
       cursor: pointer;
-      border: 1px solid #ddd;
-      border-bottom: none;
-      background: #f5f5f5;
-      margin-right: 5px;
-      border-radius: 5px 5px 0 0;
+      background: #e9ecef;
+      margin: 5px;
+      border-radius: 8px 8px 0 0;
+      font-weight: 500;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .aba:hover {
+      background: #dee2e6;
     }
     .aba.ativa {
       background: white;
       font-weight: bold;
-      border-color: #4CAF50;
+      border-bottom: 3px solid #4CAF50;
       color: #4CAF50;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
     }
     .aba-adm {
-      background: #fff3e0;
+      background: #fff3cd;
+      color: #856404;
+    }
+    .aba-adm.ativa {
       border-color: #ff9800;
+      color: #e65100;
     }
     
     .conteudo-aba {
       display: none;
+      animation: fadeIn 0.5s;
     }
     .conteudo-aba.ativa {
       display: block;
     }
     
-    /* ESTILO DO BOTÃO RECOMEÇAR */
-    #btnRecomecar {
-      background-color: #f44336;
-      color: white;
-      border: none;
-      padding: 10px 20px;
+    /* ESTILO DAS RODADAS */
+    .rodada {
+      border: 2px solid #e3f2fd;
+      padding: 20px;
       margin-top: 20px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-weight: bold;
+      border-radius: 10px;
+      background: #f8fdff;
     }
-    
-    /* ESTILO PARA OS CAMPOS DE RESULTADO (APENAS NA ABA RESULTADOS) */
-    .campo-resultado {
-      background: #e3f2fd;
-      border: 2px solid #2196F3;
-      font-weight: bold;
-    }
-    
-    .info-adm {
-      background: #e8f5e9;
-      padding: 10px;
-      border-radius: 5px;
+    .jogo {
+      background: white;
+      padding: 15px;
       margin: 10px 0;
+      border-radius: 8px;
       border-left: 4px solid #4CAF50;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+    .jogo-resultado {
+      border-left-color: #2196F3;
+      background: #f0f8ff;
+    }
+    .jogo-adm {
+      border-left-color: #ff9800;
+      background: #fff8e1;
+    }
+    
+    /* PONTOS E STATUS */
+    .pontos {
+      background: #ff9800;
+      color: white;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: bold;
+      margin-left: 10px;
+    }
+    .status-resultado {
+      display: inline-block;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      text-align: center;
+      line-height: 24px;
+      font-size: 12px;
+      margin-right: 8px;
+    }
+    .status-pendente {
+      background: #ff9800;
+      color: white;
+    }
+    .status-concluido {
+      background: #4CAF50;
+      color: white;
+    }
+    
+    /* CLASSIFICAÇÃO */
+    .tabela-classificacao {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    .tabela-classificacao th {
+      background: #4CAF50;
+      color: white;
+      padding: 15px;
+      text-align: left;
+    }
+    .tabela-classificacao td {
+      padding: 12px 15px;
+      border-bottom: 1px solid #eee;
+    }
+    .tabela-classificacao tr:hover {
+      background: #f5f5f5;
+    }
+    .posicao {
+      width: 50px;
+      text-align: center;
+      font-weight: bold;
+      font-size: 18px;
+    }
+    .posicao-1 { background: gold; }
+    .posicao-2 { background: silver; }
+    .posicao-3 { background: #cd7f32; }
+    
+    /* BOTÕES ESPECIAIS */
+    .btn-adm {
+      background: #dc3545;
+    }
+    .btn-adm:hover {
+      background: #c82333;
+    }
+    .btn-secundario {
+      background: #6c757d;
+    }
+    .btn-secundario:hover {
+      background: #5a6268;
+    }
+    
+    /* MENSAGENS */
+    .info-box {
+      background: #e3f2fd;
+      padding: 15px;
+      border-radius: 8px;
+      margin: 15px 0;
+      border-left: 4px solid #2196F3;
+    }
+    .alerta-box {
+      background: #fff3cd;
+      padding: 15px;
+      border-radius: 8px;
+      margin: 15px 0;
+      border-left: 4px solid #ff9800;
+    }
+    
+    /* ANIMAÇÕES */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* RESPONSIVO */
+    @media (max-width: 768px) {
+      #app {
+        padding: 15px;
+      }
+      .aba {
+        padding: 10px 15px;
+        font-size: 14px;
+      }
+      .tabela-classificacao th,
+      .tabela-classificacao td {
+        padding: 8px 10px;
+        font-size: 14px;
+      }
     }
   </style>
 </head>
 <body>
 
 <div id="app">
-  <h2>⚽ Bolão do Brasileirão</h2>
+  <h1 style="color: #2c3e50; text-align: center; margin-bottom: 30px;">
+    ⚽ BOLÃO DO BRASILEIRÃO 🏆
+  </h1>
 
-  <div id="login">
-    <input id="nome" placeholder="Digite seu nome">
-    <button onclick="entrar()">Entrar</button>
+  <!-- TELA DE LOGIN -->
+  <div id="login" style="text-align: center; padding: 40px;">
+    <h2>Entre no Bolão</h2>
+    <input id="nome" placeholder="Digite seu nome" style="padding: 12px; width: 300px; max-width: 80%;">
+    <br><br>
+    <button onclick="entrar()" style="padding: 12px 30px; font-size: 16px;">
+      🚀 Entrar no Bolão
+    </button>
+    <br><br>
+    <div class="info-box" style="max-width: 500px; margin: 20px auto;">
+      <strong>Instruções:</strong><br>
+      1. Digite seu nome<br>
+      2. Dê palpites nos jogos<br>
+      3. Veja sua posição na classificação<br>
+      4. <em>ADM: use nome "Pires" para acessar funções especiais</em>
+    </div>
   </div>
 
+  <!-- PAINEL PRINCIPAL (APÓS LOGIN) -->
   <div id="painel" style="display:none;">
-    <p id="bemvindo"></p>
-    
-    <!-- ABAS DE NAVEGAÇÃO -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <h2 id="bemvindo" style="margin: 0; color: #4CAF50;"></h2>
+      <button onclick="sair()" class="btn-secundario" style="padding: 8px 20px;">
+        👋 Sair
+      </button>
+    </div>
+
+    <!-- MENU DE ABAS -->
     <div class="abas" id="menuAbas">
-      <div class="aba ativa" onclick="mudarAba('palpites')">📝 PALPITES</div>
-      <div class="aba" id="abaResultados" onclick="mudarAba('resultados')">📊 RESULTADOS (ADM)</div>
+      <div class="aba ativa" onclick="mudarAba('palpites')">
+        📝 Meus Palpites
+      </div>
+      <div class="aba" onclick="mudarAba('classificacao')">
+        🏆 Classificação
+      </div>
+      <div class="aba aba-adm" id="abaResultados" onclick="mudarAba('resultados')">
+        📊 Inserir Resultados
+      </div>
+      <div class="aba aba-adm" id="abaAdmin" onclick="mudarAba('admin')">
+        ⚙️ Administração
+      </div>
     </div>
 
     <!-- CONTEÚDO DAS ABAS -->
     
-    <!-- ABA PALPITES (TODOS VEEM) -->
+    <!-- ABA 1: PALPITES -->
     <div id="conteudo-palpites" class="conteudo-aba ativa">
-      <h3>👥 Participantes</h3>
-      <ul id="listaParticipantes"></ul>
-
-      <hr>
-
-      <h3>📅 Criar Rodada</h3>
-      <input id="nomeRodada" placeholder="Ex: Rodada 1">
-      <button onclick="criarRodada()">Adicionar Rodada</button>
-
+      <div class="info-box">
+        <strong>🎯 COMO FUNCIONA:</strong><br>
+        • Pires cria as rodadas e jogos<br>
+        • Você palpita o placar de cada jogo<br>
+        • Após os jogos, Pires insere os resultados reais<br>
+        • Você ganha pontos automaticamente!
+      </div>
+      
+      <h3>📅 Rodadas Ativas</h3>
       <div id="rodadas-palpites"></div>
+      
+      <div id="sem-rodadas" class="alerta-box" style="display: none;">
+        ⏳ Aguardando o Pires criar as primeiras rodadas...
+      </div>
     </div>
     
-    <!-- ABA RESULTADOS (SÓ PIRES VÊ) -->
+    <!-- ABA 2: CLASSIFICAÇÃO -->
+    <div id="conteudo-classificacao" class="conteudo-aba">
+      <h3>🏆 Classificação Geral</h3>
+      <div id="tabela-classificacao-container"></div>
+    </div>
+    
+    <!-- ABA 3: RESULTADOS (SÓ PIRES) -->
     <div id="conteudo-resultados" class="conteudo-aba">
-      <div class="info-adm">
-        <strong>👑 MODO ADMINISTRADOR</strong><br>
-        Aqui você insere os resultados reais dos jogos. 
-        Os participantes não podem ver ou editar esta aba.
+      <div class="alerta-box">
+        <strong>👑 MODO ADMINISTRADOR - RESULTADOS</strong><br>
+        Aqui você insere os resultados reais dos jogos que já aconteceram.
       </div>
       
       <h3>🎯 Inserir Resultados Reais</h3>
-      <p>Preencha os resultados abaixo. Os pontos serão calculados automaticamente.</p>
+      <p>Preencha os resultados abaixo no formato: <strong>golsCasa x golsFora</strong> (ex: 2x1)</p>
       
       <div id="rodadas-resultados"></div>
     </div>
-
-    <!-- BOTÕES GERAIS (SEM ABA) -->
-    <br>
-    <button onclick="sair()">Sair</button>
     
-    <!-- BOTÃO RECOMEÇAR (SÓ APARECE PARA PIRES) -->
-    <br><br>
-    <button id="btnRecomecar" onclick="recomecarTudo()" style="display: none;">
-      🔥 RECOMEÇAR TUDO (APENAS ADM)
-    </button>
+    <!-- ABA 4: ADMINISTRAÇÃO (SÓ PIRES) -->
+    <div id="conteudo-admin" class="conteudo-aba">
+      <div class="alerta-box">
+        <strong>👑 MODO ADMINISTRADOR - CONFIGURAÇÕES</strong><br>
+        Aqui você gerencia as rodadas e jogos do bolão.
+      </div>
+      
+      <h3>📅 Gerenciar Rodadas</h3>
+      
+      <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+        <h4>➕ Criar Nova Rodada</h4>
+        <input id="nomeRodada" placeholder="Nome da rodada (ex: Rodada 1)" style="width: 300px;">
+        <button onclick="criarRodada()">Criar Rodada</button>
+      </div>
+      
+      <div id="rodadas-admin"></div>
+      
+      <div style="margin-top: 40px; padding-top: 20px; border-top: 2px solid #eee;">
+        <h4>⚠️ Área de Risco</h4>
+        <button id="btnRecomecar" onclick="recomecarTudo()" class="btn-adm" style="padding: 10px 25px;">
+          🔥 RECOMEÇAR TUDO (Zerar Bolão)
+        </button>
+        <p style="color: #666; font-size: 14px; margin-top: 10px;">
+          <em>Esta ação apaga todas as rodadas, jogos e palpites, mantendo apenas os participantes.</em>
+        </p>
+      </div>
+    </div>
   </div>
 </div>
 
