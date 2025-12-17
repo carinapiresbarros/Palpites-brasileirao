@@ -608,4 +608,169 @@ function renderizarRodadasResultados() {
             </div>
             <div style="text-align: right;">
               <small>Rodada ${r + 1}, Jogo ${j + 1}</small>
-            </
+            </div>
+          </div>
+          
+          <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px; align-items: end;">
+            <div>
+              <label>🏁 Resultado real:</label>
+              <input type="text" 
+                     class="campo-resultado"
+                     value="${resultadoAtual}"
+                     placeholder="0x0"
+                     oninput="salvarResultado(${r}, ${j}, this.value)"
+                     style="width: 100%; padding: 10px; font-size: 16px;">
+              <small><em>Formato: golsCasa x golsFora (ex: 2x1)</em></small>
+            </div>
+            
+            <div>
+              <label>📊 Estatísticas:</label>
+              <div style="background: white; padding: 10px; border-radius: 5px; border: 1px solid #ddd;">
+                ${resultadoAtual ? 
+                  `<strong>✅ Resultado salvo</strong><br>
+                   <small>Pontos calculados</small>` :
+                  `<strong>⏳ Aguardando</strong><br>
+                   <small>Insira o resultado</small>`}
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+    
+    html += `</div>`;
+  });
+  
+  container.innerHTML = html || "<p>Nenhum jogo cadastrado ainda.</p>";
+}
+
+function renderizarRodadasAdmin() {
+  const container = document.getElementById("rodadas-admin");
+  const usuario = localStorage.getItem("usuario");
+  const rodadas = JSON.parse(localStorage.getItem("rodadas")) || [];
+  
+  if (usuario.toLowerCase() !== ADMIN_USUARIO) {
+    container.innerHTML = "<p>⚠️ Acesso restrito ao administrador.</p>";
+    return;
+  }
+  
+  if (rodadas.length === 0) {
+    container.innerHTML = `
+      <div class="info-box">
+        <p>Nenhuma rodada criada ainda.</p>
+        <p>Use o formulário acima para criar a primeira rodada.</p>
+      </div>
+    `;
+    return;
+  }
+  
+  let html = "<h4>📋 Rodadas Criadas</h4>";
+  
+  rodadas.forEach((rodada, r) => {
+    html += `
+      <div class="rodada">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+          <h5 style="margin: 0;">${rodada.nome}</h5>
+          <button onclick="removerRodada(${r})" class="btn-secundario" style="padding: 5px 15px; font-size: 12px;">
+            🗑️ Remover Rodada
+          </button>
+        </div>
+        
+        <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+          <h6 style="margin-top: 0; color: #666;">➕ Adicionar Jogo a esta Rodada</h6>
+          <div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; align-items: end;">
+            <div>
+              <input type="text" 
+                     id="casa-adm-${r}"
+                     placeholder="Time da casa"
+                     style="width: 100%;">
+            </div>
+            <div>
+              <input type="text" 
+                     id="fora-adm-${r}"
+                     placeholder="Time visitante"
+                     style="width: 100%;">
+            </div>
+            <div>
+              <button onclick="adicionarJogo(${r})">Adicionar Jogo</button>
+            </div>
+          </div>
+        </div>
+    `;
+    
+    if (rodada.jogos.length > 0) {
+      html += `<h6 style="color: #666; margin-bottom: 10px;">🎯 Jogos desta rodada (${rodada.jogos.length}):</h6>`;
+      
+      rodada.jogos.forEach((jogo, j) => {
+        const temResultado = jogo.resultado ? "✅" : "⏳";
+        const temPalpites = verificarSeTemPalpites(r, j);
+        
+        html += `
+          <div class="jogo-adm" style="margin-bottom: 10px; padding: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <strong>${jogo.casa} x ${jogo.fora}</strong><br>
+                <small>
+                  ${temResultado} Resultado: ${jogo.resultado || 'Pendente'} | 
+                  ${temPalpites ? '📝 Com palpites' : '📭 Sem palpites'}
+                </small>
+              </div>
+              <button onclick="removerJogo(${r}, ${j})" style="padding: 5px 10px; font-size: 12px; background: #ff6b6b;">
+                ✕ Remover
+              </button>
+            </div>
+          </div>
+        `;
+      });
+    } else {
+      html += `<p style="color: #999; font-style: italic;">Nenhum jogo adicionado ainda.</p>`;
+    }
+    
+    html += `</div>`;
+  });
+  
+  container.innerHTML = html;
+}
+
+// ============================================
+// FUNÇÕES AUXILIARES
+// ============================================
+
+function verificarSeTemPalpites(indexRodada, indexJogo) {
+  const palpites = JSON.parse(localStorage.getItem("palpites")) || {};
+  let temPalpites = false;
+  
+  Object.keys(palpites).forEach(usuario => {
+    if (palpites[usuario][indexRodada] && palpites[usuario][indexRodada][indexJogo]) {
+      temPalpites = true;
+    }
+  });
+  
+  return temPalpites;
+}
+
+// ============================================
+// INICIALIZAÇÃO
+// ============================================
+
+// Verificar se já está logado ao carregar a página
+window.onload = function() {
+  const usuario = localStorage.getItem("usuario");
+  if (usuario) {
+    mostrarPainel();
+  }
+  
+  // Inicializar dados se não existirem
+  if (!localStorage.getItem("participantes")) {
+    localStorage.setItem("participantes", JSON.stringify([]));
+  }
+  if (!localStorage.getItem("rodadas")) {
+    localStorage.setItem("rodadas", JSON.stringify([]));
+  }
+  if (!localStorage.getItem("palpites")) {
+    localStorage.setItem("palpites", JSON.stringify({}));
+  }
+  if (!localStorage.getItem("pontos")) {
+    localStorage.setItem("pontos", JSON.stringify({}));
+  }
+};
