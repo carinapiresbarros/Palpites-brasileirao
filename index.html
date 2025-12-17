@@ -24,6 +24,7 @@
       border-radius: 6px;
       border: 1px solid #ddd;
       font-size: 14px;
+      box-sizing: border-box;
     }
     button {
       background: #4CAF50;
@@ -32,9 +33,87 @@
       cursor: pointer;
       transition: 0.3s;
     }
-    button:hover {
+    button:hover:not(:disabled) {
       background: #45a049;
       transform: translateY(-2px);
+    }
+    button:disabled {
+      background: #cccccc;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    /* ESTILO DOS INPUTS NUMÉRICOS DE PALPITE */
+    .input-palpite-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 10px 0;
+    }
+    .input-palpite {
+      width: 60px !important;
+      text-align: center;
+      font-size: 16px;
+      font-weight: bold;
+      padding: 10px !important;
+    }
+    .input-palpite:read-only {
+      background: #f5f5f5;
+      border-color: #ddd;
+      color: #666;
+    }
+    .input-palpite:disabled {
+      background: #e9ecef;
+      color: #999;
+      cursor: not-allowed;
+    }
+    .separador {
+      font-size: 18px;
+      font-weight: bold;
+      color: #333;
+      margin: 0 5px;
+    }
+    .btn-salvar-palpite {
+      background: #2196F3;
+      padding: 8px 16px;
+      margin-left: 10px;
+      font-size: 13px;
+    }
+    .btn-salvar-palpite:hover:not(:disabled) {
+      background: #0b7dda;
+    }
+    .btn-salvar-palpite.salvo {
+      background: #4CAF50;
+    }
+    .btn-salvar-palpite.bloqueado {
+      background: #f44336;
+    }
+    
+    /* STATUS DOS PALPITES */
+    .status-palpite {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: bold;
+      margin-left: 10px;
+    }
+    .status-aberto {
+      background: #4CAF50;
+      color: white;
+    }
+    .status-salvo {
+      background: #2196F3;
+      color: white;
+    }
+    .status-bloqueado {
+      background: #f44336;
+      color: white;
+    }
+    .status-finalizado {
+      background: #9C27B0;
+      color: white;
     }
     
     /* ESTILO DAS ABAS */
@@ -97,7 +176,7 @@
     .jogo {
       background: white;
       padding: 15px;
-      margin: 10px 0;
+      margin: 15px 0;
       border-radius: 8px;
       border-left: 4px solid #4CAF50;
       box-shadow: 0 2px 5px rgba(0,0,0,0.05);
@@ -111,33 +190,16 @@
       background: #fff8e1;
     }
     
-    /* PONTOS E STATUS */
-    .pontos {
+    /* PONTOS */
+    .pontos-badge {
       background: #ff9800;
       color: white;
-      padding: 3px 8px;
+      padding: 4px 10px;
       border-radius: 12px;
       font-size: 12px;
       font-weight: bold;
-      margin-left: 10px;
-    }
-    .status-resultado {
       display: inline-block;
-      width: 24px;
-      height: 24px;
-      border-radius: 50%;
-      text-align: center;
-      line-height: 24px;
-      font-size: 12px;
-      margin-right: 8px;
-    }
-    .status-pendente {
-      background: #ff9800;
-      color: white;
-    }
-    .status-concluido {
-      background: #4CAF50;
-      color: white;
+      margin-left: 10px;
     }
     
     /* CLASSIFICAÇÃO */
@@ -173,13 +235,13 @@
     .btn-adm {
       background: #dc3545;
     }
-    .btn-adm:hover {
+    .btn-adm:hover:not(:disabled) {
       background: #c82333;
     }
     .btn-secundario {
       background: #6c757d;
     }
-    .btn-secundario:hover {
+    .btn-secundario:hover:not(:disabled) {
       background: #5a6268;
     }
     
@@ -214,10 +276,11 @@
         padding: 10px 15px;
         font-size: 14px;
       }
-      .tabela-classificacao th,
-      .tabela-classificacao td {
-        padding: 8px 10px;
-        font-size: 14px;
+      .input-palpite-container {
+        flex-wrap: wrap;
+      }
+      .input-palpite {
+        width: 50px !important;
       }
     }
   </style>
@@ -239,15 +302,16 @@
     </button>
     <br><br>
     <div class="info-box" style="max-width: 500px; margin: 20px auto;">
-      <strong>Instruções:</strong><br>
+      <strong>🎯 COMO FUNCIONA:</strong><br>
       1. Digite seu nome<br>
-      2. Dê palpites nos jogos<br>
-      3. Veja sua posição na classificação<br>
-      4. <em>ADM: use nome "Pires" para acessar funções especiais</em>
+      2. Dê palpites nos jogos (apenas números)<br>
+      3. Clique em SALVAR para confirmar<br>
+      4. Após o resultado, veja seus pontos<br>
+      <em>ADM: use nome "Pires" para configurar</em>
     </div>
   </div>
 
-  <!-- PAINEL PRINCIPAL (APÓS LOGIN) -->
+  <!-- PAINEL PRINCIPAL -->
   <div id="painel" style="display:none;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
       <h2 id="bemvindo" style="margin: 0; color: #4CAF50;"></h2>
@@ -277,11 +341,11 @@
     <!-- ABA 1: PALPITES -->
     <div id="conteudo-palpites" class="conteudo-aba ativa">
       <div class="info-box">
-        <strong>🎯 COMO FUNCIONA:</strong><br>
-        • Pires cria as rodadas e jogos<br>
-        • Você palpita o placar de cada jogo<br>
-        • Após os jogos, Pires insere os resultados reais<br>
-        • Você ganha pontos automaticamente!
+        <strong>🎯 DÊ SEUS PALPITES:</strong><br>
+        • Preencha com números (ex: 2 e 1)<br>
+        • Clique em <strong>SALVAR</strong> para confirmar<br>
+        • Após salvar, não pode mais editar<br>
+        • Quando Pires colocar o resultado, seus pontos aparecem
       </div>
       
       <h3>📅 Rodadas Ativas</h3>
@@ -302,12 +366,10 @@
     <div id="conteudo-resultados" class="conteudo-aba">
       <div class="alerta-box">
         <strong>👑 MODO ADMINISTRADOR - RESULTADOS</strong><br>
-        Aqui você insere os resultados reais dos jogos que já aconteceram.
+        Insira os resultados reais dos jogos. Após salvar, os palpites serão bloqueados.
       </div>
       
       <h3>🎯 Inserir Resultados Reais</h3>
-      <p>Preencha os resultados abaixo no formato: <strong>golsCasa x golsFora</strong> (ex: 2x1)</p>
-      
       <div id="rodadas-resultados"></div>
     </div>
     
@@ -315,7 +377,7 @@
     <div id="conteudo-admin" class="conteudo-aba">
       <div class="alerta-box">
         <strong>👑 MODO ADMINISTRADOR - CONFIGURAÇÕES</strong><br>
-        Aqui você gerencia as rodadas e jogos do bolão.
+        Crie rodadas e adicione jogos. Depois, os participantes poderão palpitar.
       </div>
       
       <h3>📅 Gerenciar Rodadas</h3>
