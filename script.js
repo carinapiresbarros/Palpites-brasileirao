@@ -5,6 +5,56 @@ let abaAtual = 'palpites';
 const ADMIN_USUARIO = 'pires';
 
 // ============================================
+// FUNÇÕES AUXILIARES DE VALIDAÇÃO
+// ============================================
+
+function validarNumeroInput(input) {
+  // Remove qualquer caractere que não seja número
+  let valor = input.value.replace(/[^0-9]/g, '');
+  
+  // Limita a 2 dígitos
+  if (valor.length > 2) {
+    valor = valor.substring(0, 2);
+  }
+  
+  // Se vazio, permite 0
+  if (valor === '') {
+    valor = '0';
+  }
+  
+  // Remove zeros à esquerda, exceto se for "0"
+  valor = parseInt(valor, 10).toString();
+  
+  input.value = valor;
+  return valor;
+}
+
+function formatarPalpite(casa, fora) {
+  return `${casa}x${fora}`;
+}
+
+function obterStatusJogo(jogo, usuario, rIndex, jIndex) {
+  const resultado = jogo.resultado;
+  const palpite = obterPalpiteUsuario(usuario, rIndex, jIndex);
+  const palpiteSalvo = palpite !== "";
+  
+  if (resultado) {
+    return 'FINALIZADO';
+  } else if (palpiteSalvo && jogo.bloqueado) {
+    return 'BLOQUEADO';
+  } else if (palpiteSalvo) {
+    return 'SALVO';
+  } else {
+    return 'ABERTO';
+  }
+}
+
+function podeEditarPalpite(jogo, usuario, rIndex, jIndex) {
+  const status = obterStatusJogo(jogo, usuario, rIndex, jIndex);
+  return status === 'ABERTO' || status === 'SALVO';
+}
+
+// ============================================
 // FUNÇÕES DE LOGIN E CONTROLE
 // ============================================
 
@@ -18,17 +68,13 @@ function entrar() {
     return;
   }
   
-  // Salvar/recuperar participantes
   let participantes = JSON.parse(localStorage.getItem("participantes")) || [];
   if (!participantes.includes(nome)) {
     participantes.push(nome);
     localStorage.setItem("participantes", JSON.stringify(participantes));
   }
   
-  // Salvar usuário atual
   localStorage.setItem("usuario", nome);
-  
-  // Limpar campo e mostrar painel
   nomeInput.value = "";
   mostrarPainel();
 }
@@ -44,11 +90,9 @@ function mostrarPainel() {
   const usuario = localStorage.getItem("usuario");
   if (!usuario) return;
   
-  // Mostrar painel principal
   document.getElementById("login").style.display = "none";
   document.getElementById("painel").style.display = "block";
   
-  // Personalizar mensagem de boas-vindas
   const bemvindo = document.getElementById("bemvindo");
   if (usuario.toLowerCase() === ADMIN_USUARIO) {
     bemvindo.innerHTML = `👑 Bem-vindo, <strong style="color: #e65100;">${usuario}</strong> (Administrador)`;
@@ -56,10 +100,7 @@ function mostrarPainel() {
     bemvindo.innerHTML = `👤 Bem-vindo, <strong>${usuario}</strong>`;
   }
   
-  // Configurar acesso baseado no usuário
   configurarAcessoUsuario(usuario);
-  
-  // Renderizar conteúdo inicial
   renderizarTodasAbas();
 }
 
@@ -69,7 +110,6 @@ function configurarAcessoUsuario(usuario) {
   const abaAdmin = document.getElementById("abaAdmin");
   const btnRecomecar = document.getElementById("btnRecomecar");
   
-  // Mostrar/esconder abas administrativas
   if (ehAdm) {
     abaResultados.style.display = "flex";
     abaAdmin.style.display = "flex";
@@ -79,7 +119,6 @@ function configurarAcessoUsuario(usuario) {
     abaAdmin.style.display = "none";
     btnRecomecar.style.display = "none";
     
-    // Se estava em uma aba administrativa, voltar para palpites
     if (abaAtual === 'resultados' || abaAtual === 'admin') {
       mudarAba('palpites');
     }
@@ -90,16 +129,13 @@ function mudarAba(nomeAba) {
   const usuario = localStorage.getItem("usuario");
   const ehAdm = usuario && usuario.toLowerCase() === ADMIN_USUARIO;
   
-  // Bloquear acesso não autorizado
   if ((nomeAba === 'resultados' || nomeAba === 'admin') && !ehAdm) {
     alert("⚠️ Apenas o administrador Pires pode acessar esta área!");
     return;
   }
   
-  // Atualizar aba atual
   abaAtual = nomeAba;
   
-  // Atualizar visual das abas
   document.querySelectorAll('.aba').forEach(aba => {
     aba.classList.remove('ativa');
   });
@@ -108,7 +144,6 @@ function mudarAba(nomeAba) {
     conteudo.classList.remove('ativa');
   });
   
-  // Ativar aba selecionada
   const abaSelecionada = document.querySelector(`.aba[onclick*="${nomeAba}"]`);
   const conteudoSelecionado = document.getElementById(`conteudo-${nomeAba}`);
   
@@ -116,7 +151,6 @@ function mudarAba(nomeAba) {
     abaSelecionada.classList.add('ativa');
     conteudoSelecionado.classList.add('ativa');
     
-    // Renderizar conteúdo específico da aba
     switch(nomeAba) {
       case 'palpites':
         renderizarRodadasPalpites();
@@ -154,18 +188,17 @@ function criarRodada() {
     return;
   }
   
-  // Criar nova rodada
   let rodadas = JSON.parse(localStorage.getItem("rodadas")) || [];
   rodadas.push({
     nome: nome,
     jogos: [],
-    ativa: true
+    ativa: true,
+    criadaEm: new Date().toISOString()
   });
   
   localStorage.setItem("rodadas", JSON.stringify(rodadas));
   nomeInput.value = "";
   
-  // Renderizar todas as abas
   renderizarTodasAbas();
   mudarAba('admin');
   
@@ -188,124 +221,64 @@ function adicionarJogo(indexRodada) {
   rodadas[indexRodada].jogos.push({
     casa: casa,
     fora: fora,
-    resultado: ""
+    resultado: "",
+    criadoEm: new Date().toISOString(),
+    bloqueado: false,
+    resultadoSalvo: false
   });
   
   localStorage.setItem("rodadas", JSON.stringify(rodadas));
   renderizarRodadasAdmin();
   
-  // Limpar campos
   document.getElementById(`casa-adm-${indexRodada}`).value = "";
   document.getElementById(`fora-adm-${indexRodada}`).value = "";
-}
-
-function removerJogo(indexRodada, indexJogo) {
-  if (!confirm("Remover este jogo? Todos os palpites serão perdidos.")) return;
   
-  let rodadas = JSON.parse(localStorage.getItem("rodadas")) || [];
-  rodadas[indexRodada].jogos.splice(indexJogo, 1);
-  localStorage.setItem("rodadas", JSON.stringify(rodadas));
-  
-  // Remover palpites deste jogo
-  let palpites = JSON.parse(localStorage.getItem("palpites")) || {};
-  Object.keys(palpites).forEach(usuario => {
-    if (palpites[usuario][indexRodada]) {
-      delete palpites[usuario][indexRodada][indexJogo];
-    }
-  });
-  localStorage.setItem("palpites", JSON.stringify(palpites));
-  
-  renderizarTodasAbas();
-}
-
-function removerRodada(index) {
-  if (!confirm("Remover esta rodada e todos os seus jogos?")) return;
-  
-  let rodadas = JSON.parse(localStorage.getItem("rodadas")) || [];
-  rodadas.splice(index, 1);
-  localStorage.setItem("rodadas", JSON.stringify(rodadas));
-  
-  renderizarTodasAbas();
-}
-
-function recomecarTudo() {
-  const usuario = localStorage.getItem("usuario");
-  if (usuario.toLowerCase() !== ADMIN_USUARIO) return;
-  
-  if (!confirm("🚨 ATENÇÃO PIRES! 🚨\n\nIsso apagará TODAS as rodadas, jogos e palpites!\n\nContinuar?")) return;
-  
-  const confirmacao = prompt("Digite 'ZERAR' para confirmar:");
-  if (confirmacao !== "ZERAR") {
-    alert("❌ Operação cancelada.");
-    return;
-  }
-  
-  // Manter apenas participantes e usuário atual
-  const participantes = JSON.parse(localStorage.getItem("participantes")) || [];
-  const usuarioAtual = localStorage.getItem("usuario");
-  
-  localStorage.clear();
-  
-  localStorage.setItem("participantes", JSON.stringify(participantes));
-  localStorage.setItem("usuario", usuarioAtual);
-  
-  alert("✅ Bolão zerado! Você pode começar um novo campeonato.");
-  location.reload();
+  alert(`✅ Jogo "${casa} x ${fora}" adicionado!`);
 }
 
 // ============================================
-// FUNÇÕES DE PALPITES E RESULTADOS
+// FUNÇÕES DE PALPITES
 // ============================================
 
-function salvarPalpite(indexRodada, indexJogo, valor) {
+function salvarPalpite(indexRodada, indexJogo, inputCasaId, inputForaId) {
   const usuario = localStorage.getItem("usuario");
   if (!usuario) return;
   
-  // Validar formato do palpite
-  if (valor && !/^\d+x\d+$/.test(valor)) {
-    alert("Use o formato: números x números (ex: 2x1)");
-    return;
-  }
+  const inputCasa = document.getElementById(inputCasaId);
+  const inputFora = document.getElementById(inputForaId);
+  
+  const golsCasa = validarNumeroInput(inputCasa);
+  const golsFora = validarNumeroInput(inputFora);
+  
+  const palpite = formatarPalpite(golsCasa, golsFora);
   
   let palpites = JSON.parse(localStorage.getItem("palpites")) || {};
   
   if (!palpites[usuario]) palpites[usuario] = {};
   if (!palpites[usuario][indexRodada]) palpites[usuario][indexRodada] = {};
   
-  palpites[usuario][indexRodada][indexJogo] = valor;
+  palpites[usuario][indexRodada][indexJogo] = palpite;
   localStorage.setItem("palpites", JSON.stringify(palpites));
   
-  // Recalcular pontos
-  calcularPontosUsuario(usuario);
+  // Marcar como salvo
+  inputCasa.readOnly = true;
+  inputFora.readOnly = true;
   
-  // Atualizar exibição
-  if (abaAtual === 'palpites') {
-    renderizarRodadasPalpites();
-  }
-  if (abaAtual === 'classificacao') {
-    renderizarClassificacao();
-  }
-}
-
-function salvarResultado(indexRodada, indexJogo, valor) {
-  const usuario = localStorage.getItem("usuario");
-  if (usuario.toLowerCase() !== ADMIN_USUARIO) return;
-  
-  // Validar formato do resultado
-  if (valor && !/^\d+x\d+$/.test(valor)) {
-    alert("Use o formato: números x números (ex: 2x1)");
-    return;
+  // Atualizar botão
+  const btnSalvar = document.querySelector(`button[onclick*="salvarPalpite(${indexRodada}, ${indexJogo},"]`);
+  if (btnSalvar) {
+    btnSalvar.textContent = "✅ SALVO";
+    btnSalvar.classList.add('salvo');
+    btnSalvar.disabled = true;
   }
   
+  // Recalcular pontos se já tiver resultado
   let rodadas = JSON.parse(localStorage.getItem("rodadas")) || [];
-  rodadas[indexRodada].jogos[indexJogo].resultado = valor;
-  localStorage.setItem("rodadas", JSON.stringify(rodadas));
+  if (rodadas[indexRodada]?.jogos[indexJogo]?.resultado) {
+    calcularPontosUsuario(usuario);
+  }
   
-  // Recalcular pontos para todos
-  calcularPontosTodosUsuarios();
-  
-  // Atualizar todas as abas
-  renderizarTodasAbas();
+  renderizarRodadasPalpites();
 }
 
 function obterPalpiteUsuario(usuario, indexRodada, indexJogo) {
@@ -316,6 +289,56 @@ function obterPalpiteUsuario(usuario, indexRodada, indexJogo) {
 function obterMeuPalpite(indexRodada, indexJogo) {
   const usuario = localStorage.getItem("usuario");
   return obterPalpiteUsuario(usuario, indexRodada, indexJogo);
+}
+
+function parsePalpite(palpite) {
+  if (!palpite || !palpite.includes('x')) return { casa: '0', fora: '0' };
+  const [casa, fora] = palpite.split('x');
+  return { casa: casa || '0', fora: fora || '0' };
+}
+
+// ============================================
+// FUNÇÕES DE RESULTADOS (SÓ PIRES)
+// ============================================
+
+function salvarResultado(indexRodada, indexJogo, inputCasaId, inputForaId) {
+  const usuario = localStorage.getItem("usuario");
+  if (usuario.toLowerCase() !== ADMIN_USUARIO) return;
+  
+  const inputCasa = document.getElementById(inputCasaId);
+  const inputFora = document.getElementById(inputForaId);
+  
+  const golsCasa = validarNumeroInput(inputCasa);
+  const golsFora = validarNumeroInput(inputFora);
+  
+  const resultado = formatarPalpite(golsCasa, golsFora);
+  
+  let rodadas = JSON.parse(localStorage.getItem("rodadas")) || [];
+  rodadas[indexRodada].jogos[indexJogo].resultado = resultado;
+  rodadas[indexRodada].jogos[indexJogo].resultadoSalvo = true;
+  rodadas[indexRodada].jogos[indexJogo].bloqueado = true;
+  
+  localStorage.setItem("rodadas", JSON.stringify(rodadas));
+  
+  // Bloquear inputs do resultado
+  inputCasa.readOnly = true;
+  inputFora.readOnly = true;
+  
+  // Atualizar botão
+  const btnSalvar = document.querySelector(`button[onclick*="salvarResultado(${indexRodada}, ${indexJogo},"]`);
+  if (btnSalvar) {
+    btnSalvar.textContent = "✅ RESULTADO SALVO";
+    btnSalvar.classList.add('salvo');
+    btnSalvar.disabled = true;
+  }
+  
+  // Recalcular pontos para todos
+  calcularPontosTodosUsuarios();
+  
+  // Atualizar todas as abas
+  renderizarTodasAbas();
+  
+  alert(`✅ Resultado salvo! Palpites deste jogo foram bloqueados.`);
 }
 
 // ============================================
@@ -441,43 +464,98 @@ function renderizarRodadasPalpites() {
     html += `
       <div class="rodada">
         <h4>${rodada.nome}</h4>
-        <p><em>${rodada.jogos.length} jogo(s) - Preencha seus palpites abaixo:</em></p>
+        <p><em>${rodada.jogos.length} jogo(s) - Preencha e salve seus palpites:</em></p>
     `;
     
     rodada.jogos.forEach((jogo, j) => {
       const meuPalpite = obterMeuPalpite(r, j);
+      const palpiteParseado = parsePalpite(meuPalpite);
       const resultado = jogo.resultado;
+      const resultadoParseado = parsePalpite(resultado);
       const pontos = resultado ? calcularPontosJogo(meuPalpite, resultado) : 0;
-      const statusIcon = resultado ? "✅" : "⏳";
+      const status = obterStatusJogo(jogo, usuario, r, j);
+      
+      // IDs únicos para os inputs
+      const inputCasaId = `palpite-casa-${r}-${j}`;
+      const inputForaId = `palpite-fora-${r}-${j}`;
+      
+      // Determinar se pode editar
+      const podeEditar = status === 'ABERTO';
+      const estaSalvo = status === 'SALVO' || status === 'FINALIZADO' || status === 'BLOQUEADO';
+      const estaBloqueado = status === 'FINALIZADO' || status === 'BLOQUEADO';
+      
+      // Texto do botão
+      let textoBotao = "SALVAR";
+      let classeBotao = "";
+      if (estaSalvo) textoBotao = "✅ SALVO";
+      if (estaBloqueado) {
+        textoBotao = "🔒 BLOQUEADO";
+        classeBotao = "bloqueado";
+      }
       
       html += `
         <div class="jogo">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
             <div>
-              <span class="status-resultado ${resultado ? 'status-concluido' : 'status-pendente'}">
-                ${statusIcon}
-              </span>
               <strong>${jogo.casa} x ${jogo.fora}</strong>
+              <span class="status-palpite status-${status.toLowerCase()}">
+                ${status === 'ABERTO' ? '🟢 ABERTO' : 
+                  status === 'SALVO' ? '🟡 SALVO' : 
+                  status === 'BLOQUEADO' ? '🔴 BLOQUEADO' : 
+                  '🔵 FINALIZADO'}
+              </span>
             </div>
-            ${pontos > 0 ? `<span class="pontos">+${pontos}</span>` : ''}
+            ${pontos > 0 ? `<span class="pontos-badge">+${pontos} pontos</span>` : ''}
           </div>
           
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-            <div>
-              <label>📝 Seu palpite:</label><br>
+          <div>
+            <label>📝 Seu palpite:</label>
+            <div class="input-palpite-container">
               <input type="text" 
-                     value="${meuPalpite}"
-                     placeholder="0x0"
-                     oninput="salvarPalpite(${r}, ${j}, this.value)"
-                     style="width: 100%; padding: 8px;">
+                     id="${inputCasaId}"
+                     class="input-palpite"
+                     value="${palpiteParseado.casa}"
+                     placeholder="0"
+                     ${!podeEditar ? 'readonly' : ''}
+                     oninput="validarNumeroInput(this)"
+                     maxlength="2">
+              <span class="separador">x</span>
+              <input type="text" 
+                     id="${inputForaId}"
+                     class="input-palpite"
+                     value="${palpiteParseado.fora}"
+                     placeholder="0"
+                     ${!podeEditar ? 'readonly' : ''}
+                     oninput="validarNumeroInput(this)"
+                     maxlength="2">
+              
+              <button class="btn-salvar-palpite ${classeBotao}"
+                      onclick="salvarPalpite(${r}, ${j}, '${inputCasaId}', '${inputForaId}')"
+                      ${estaSalvo || estaBloqueado ? 'disabled' : ''}>
+                ${textoBotao}
+              </button>
             </div>
-            <div>
-              <label>📊 Resultado real:</label><br>
-              <input type="text" 
-                     value="${resultado || ''}"
-                     placeholder="${resultado ? resultado : 'Aguardando...'}"
-                     disabled
-                     style="width: 100%; padding: 8px; background: #f5f5f5;">
+            
+            <div style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 5px;">
+              <label>📊 Resultado real:</label>
+              <div class="input-palpite-container">
+                <input type="text" 
+                       class="input-palpite"
+                       value="${resultadoParseado.casa}"
+                       placeholder="0"
+                       readonly
+                       style="background: #e9ecef;">
+                <span class="separador">x</span>
+                <input type="text" 
+                       class="input-palpite"
+                       value="${resultadoParseado.fora}"
+                       placeholder="0"
+                       readonly
+                       style="background: #e9ecef;">
+                <span style="margin-left: 10px; color: ${resultado ? '#4CAF50' : '#999'}">
+                  ${resultado ? '✅ Resultado registrado' : '⏳ Aguardando resultado'}
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -499,10 +577,8 @@ function renderizarClassificacao() {
     return;
   }
   
-  // Calcular pontos de todos
   calcularPontosTodosUsuarios();
   
-  // Obter pontuação de cada participante
   let classificacao = participantes.map(usuario => {
     const pontos = obterPontuacaoUsuario(usuario);
     return {
@@ -513,7 +589,6 @@ function renderizarClassificacao() {
     };
   });
   
-  // Ordenar por pontos (decrescente)
   classificacao.sort((a, b) => b.total - a.total);
   
   let html = `
@@ -541,7 +616,7 @@ function renderizarClassificacao() {
           ${posicao} ${medalha}
         </td>
         <td>
-          ${item.usuario === ADMIN_USUARIO ? '👑 ' : '👤 '}
+          ${item.usuario.toLowerCase() === ADMIN_USUARIO ? '👑 ' : '👤 '}
           <strong>${item.usuario}</strong>
           ${item.usuario === localStorage.getItem("usuario") ? ' <em>(você)</em>' : ''}
         </td>
@@ -593,45 +668,66 @@ function renderizarRodadasResultados() {
     html += `
       <div class="rodada">
         <h4>${rodada.nome} (${rodada.jogos.length} jogos)</h4>
+        <p><em>Preencha os resultados reais. Após salvar, os palpites serão bloqueados.</em></p>
     `;
     
     rodada.jogos.forEach((jogo, j) => {
-      const resultadoAtual = jogo.resultado || "";
+      const resultadoParseado = parsePalpite(jogo.resultado);
       const temPalpites = verificarSeTemPalpites(r, j);
+      
+      // IDs únicos para os inputs de resultado
+      const inputCasaId = `resultado-casa-${r}-${j}`;
+      const inputForaId = `resultado-fora-${r}-${j}`;
+      
+      const resultadoSalvo = jogo.resultadoSalvo;
       
       html += `
         <div class="jogo-resultado">
-          <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+          <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
             <div>
               <strong>${jogo.casa} x ${jogo.fora}</strong><br>
-              <small>${temPalpites ? '✅ Com palpites' : '⚠️ Sem palpites ainda'}</small>
+              <small>${temPalpites ? '✅ Com palpites registrados' : '⚠️ Ainda sem palpites'}</small>
             </div>
             <div style="text-align: right;">
               <small>Rodada ${r + 1}, Jogo ${j + 1}</small>
             </div>
           </div>
           
-          <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px; align-items: end;">
-            <div>
-              <label>🏁 Resultado real:</label>
+          <div>
+            <label>🏁 Resultado real:</label>
+            <div class="input-palpite-container">
               <input type="text" 
-                     class="campo-resultado"
-                     value="${resultadoAtual}"
-                     placeholder="0x0"
-                     oninput="salvarResultado(${r}, ${j}, this.value)"
-                     style="width: 100%; padding: 10px; font-size: 16px;">
-              <small><em>Formato: golsCasa x golsFora (ex: 2x1)</em></small>
+                     id="${inputCasaId}"
+                     class="input-palpite"
+                     value="${resultadoParseado.casa}"
+                     placeholder="0"
+                     ${resultadoSalvo ? 'readonly' : ''}
+                     oninput="validarNumeroInput(this)"
+                     maxlength="2"
+                     style="${resultadoSalvo ? 'background: #e9ecef;' : 'background: #fff3cd;'}">
+              <span class="separador">x</span>
+              <input type="text" 
+                     id="${inputForaId}"
+                     class="input-palpite"
+                     value="${resultadoParseado.fora}"
+                     placeholder="0"
+                     ${resultadoSalvo ? 'readonly' : ''}
+                     oninput="validarNumeroInput(this)"
+                     maxlength="2"
+                     style="${resultadoSalvo ? 'background: #e9ecef;' : 'background: #fff3cd;'}">
+              
+              <button class="btn-salvar-palpite"
+                      onclick="salvarResultado(${r}, ${j}, '${inputCasaId}', '${inputForaId}')"
+                      ${resultadoSalvo ? 'disabled' : ''}
+                      style="${resultadoSalvo ? 'background: #4CAF50;' : ''}">
+                ${resultadoSalvo ? '✅ RESULTADO SALVO' : 'SALVAR RESULTADO'}
+              </button>
             </div>
             
-            <div>
-              <label>📊 Estatísticas:</label>
-              <div style="background: white; padding: 10px; border-radius: 5px; border: 1px solid #ddd;">
-                ${resultadoAtual ? 
-                  `<strong>✅ Resultado salvo</strong><br>
-                   <small>Pontos calculados</small>` :
-                  `<strong>⏳ Aguardando</strong><br>
-                   <small>Insira o resultado</small>`}
-              </div>
+            <div style="margin-top: 10px; font-size: 13px; color: #666;">
+              ${resultadoSalvo ? 
+                '🔒 <strong>Resultado salvo!</strong> Palpites deste jogo estão bloqueados.' : 
+                '⚠️ <strong>Atenção:</strong> Após salvar, ninguém poderá mais editar palpites.'}
             </div>
           </div>
         </div>
@@ -671,9 +767,7 @@ function renderizarRodadasAdmin() {
       <div class="rodada">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
           <h5 style="margin: 0;">${rodada.nome}</h5>
-          <button onclick="removerRodada(${r})" class="btn-secundario" style="padding: 5px 15px; font-size: 12px;">
-            🗑️ Remover Rodada
-          </button>
+          <small style="color: #666;">Criada em: ${new Date(rodada.criadaEm).toLocaleDateString()}</small>
         </div>
         
         <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
@@ -702,8 +796,9 @@ function renderizarRodadasAdmin() {
       html += `<h6 style="color: #666; margin-bottom: 10px;">🎯 Jogos desta rodada (${rodada.jogos.length}):</h6>`;
       
       rodada.jogos.forEach((jogo, j) => {
-        const temResultado = jogo.resultado ? "✅" : "⏳";
+        const resultado = jogo.resultado || 'Pendente';
         const temPalpites = verificarSeTemPalpites(r, j);
+        const bloqueado = jogo.bloqueado;
         
         html += `
           <div class="jogo-adm" style="margin-bottom: 10px; padding: 12px;">
@@ -711,13 +806,12 @@ function renderizarRodadasAdmin() {
               <div>
                 <strong>${jogo.casa} x ${jogo.fora}</strong><br>
                 <small>
-                  ${temResultado} Resultado: ${jogo.resultado || 'Pendente'} | 
-                  ${temPalpites ? '📝 Com palpites' : '📭 Sem palpites'}
+                  ${bloqueado ? '🔒 ' : '🟢 '}
+                  Resultado: ${resultado} | 
+                  ${temPalpites ? '📝 Com palpites' : '📭 Sem palpites'} |
+                  ${bloqueado ? 'Bloqueado' : 'Aberto'}
                 </small>
               </div>
-              <button onclick="removerJogo(${r}, ${j})" style="padding: 5px 10px; font-size: 12px; background: #ff6b6b;">
-                ✕ Remover
-              </button>
             </div>
           </div>
         `;
@@ -749,18 +843,40 @@ function verificarSeTemPalpites(indexRodada, indexJogo) {
   return temPalpites;
 }
 
+function recomecarTudo() {
+  const usuario = localStorage.getItem("usuario");
+  if (usuario.toLowerCase() !== ADMIN_USUARIO) return;
+  
+  if (!confirm("🚨 ATENÇÃO PIRES! 🚨\n\nIsso apagará TODAS as rodadas, jogos e palpites!\n\nContinuar?")) return;
+  
+  const confirmacao = prompt("Digite 'ZERAR' para confirmar:");
+  if (confirmacao !== "ZERAR") {
+    alert("❌ Operação cancelada.");
+    return;
+  }
+  
+  const participantes = JSON.parse(localStorage.getItem("participantes")) || [];
+  const usuarioAtual = localStorage.getItem("usuario");
+  
+  localStorage.clear();
+  
+  localStorage.setItem("participantes", JSON.stringify(participantes));
+  localStorage.setItem("usuario", usuarioAtual);
+  
+  alert("✅ Bolão zerado! Você pode começar um novo campeonato.");
+  location.reload();
+}
+
 // ============================================
 // INICIALIZAÇÃO
 // ============================================
 
-// Verificar se já está logado ao carregar a página
 window.onload = function() {
   const usuario = localStorage.getItem("usuario");
   if (usuario) {
     mostrarPainel();
   }
   
-  // Inicializar dados se não existirem
   if (!localStorage.getItem("participantes")) {
     localStorage.setItem("participantes", JSON.stringify([]));
   }
