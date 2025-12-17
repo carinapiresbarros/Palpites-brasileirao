@@ -12,7 +12,7 @@
     #app {
       background: white;
       padding: 20px;
-      max-width: 900px;
+      max-width: 1000px;
       margin: auto;
       border-radius: 8px;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
@@ -35,16 +35,52 @@
       border-left: 3px solid #4CAF50;
       background: white;
     }
-    .resultado-real {
-      color: #2196F3;
-      font-weight: bold;
-      margin-left: 10px;
+    .jogo-resultado {
+      margin-left: 15px;
+      margin-top: 8px;
+      padding: 8px;
+      border-left: 3px solid #2196F3;
+      background: #f0f8ff;
     }
     .pontos {
       color: #FF9800;
       font-weight: bold;
       margin-left: 10px;
     }
+    
+    /* ESTILO DAS ABAS */
+    .abas {
+      display: flex;
+      border-bottom: 2px solid #ddd;
+      margin-bottom: 20px;
+    }
+    .aba {
+      padding: 10px 20px;
+      cursor: pointer;
+      border: 1px solid #ddd;
+      border-bottom: none;
+      background: #f5f5f5;
+      margin-right: 5px;
+      border-radius: 5px 5px 0 0;
+    }
+    .aba.ativa {
+      background: white;
+      font-weight: bold;
+      border-color: #4CAF50;
+      color: #4CAF50;
+    }
+    .aba-adm {
+      background: #fff3e0;
+      border-color: #ff9800;
+    }
+    
+    .conteudo-aba {
+      display: none;
+    }
+    .conteudo-aba.ativa {
+      display: block;
+    }
+    
     /* ESTILO DO BOTÃO RECOMEÇAR */
     #btnRecomecar {
       background-color: #f44336;
@@ -55,10 +91,21 @@
       border-radius: 4px;
       cursor: pointer;
       font-weight: bold;
-      display: none; /* Inicialmente escondido */
     }
-    #btnRecomecar:hover {
-      background-color: #d32f2f;
+    
+    /* ESTILO PARA OS CAMPOS DE RESULTADO (APENAS NA ABA RESULTADOS) */
+    .campo-resultado {
+      background: #e3f2fd;
+      border: 2px solid #2196F3;
+      font-weight: bold;
+    }
+    
+    .info-adm {
+      background: #e8f5e9;
+      padding: 10px;
+      border-radius: 5px;
+      margin: 10px 0;
+      border-left: 4px solid #4CAF50;
     }
   </style>
 </head>
@@ -74,24 +121,50 @@
 
   <div id="painel" style="display:none;">
     <p id="bemvindo"></p>
+    
+    <!-- ABAS DE NAVEGAÇÃO -->
+    <div class="abas" id="menuAbas">
+      <div class="aba ativa" onclick="mudarAba('palpites')">📝 PALPITES</div>
+      <div class="aba" id="abaResultados" onclick="mudarAba('resultados')">📊 RESULTADOS (ADM)</div>
+    </div>
 
-    <h3>👥 Participantes</h3>
-    <ul id="listaParticipantes"></ul>
+    <!-- CONTEÚDO DAS ABAS -->
+    
+    <!-- ABA PALPITES (TODOS VEEM) -->
+    <div id="conteudo-palpites" class="conteudo-aba ativa">
+      <h3>👥 Participantes</h3>
+      <ul id="listaParticipantes"></ul>
 
-    <hr>
+      <hr>
 
-    <h3>📅 Criar Rodada</h3>
-    <input id="nomeRodada" placeholder="Ex: Rodada 1">
-    <button onclick="criarRodada()">Adicionar Rodada</button>
+      <h3>📅 Criar Rodada</h3>
+      <input id="nomeRodada" placeholder="Ex: Rodada 1">
+      <button onclick="criarRodada()">Adicionar Rodada</button>
 
-    <div id="rodadas"></div>
+      <div id="rodadas-palpites"></div>
+    </div>
+    
+    <!-- ABA RESULTADOS (SÓ PIRES VÊ) -->
+    <div id="conteudo-resultados" class="conteudo-aba">
+      <div class="info-adm">
+        <strong>👑 MODO ADMINISTRADOR</strong><br>
+        Aqui você insere os resultados reais dos jogos. 
+        Os participantes não podem ver ou editar esta aba.
+      </div>
+      
+      <h3>🎯 Inserir Resultados Reais</h3>
+      <p>Preencha os resultados abaixo. Os pontos serão calculados automaticamente.</p>
+      
+      <div id="rodadas-resultados"></div>
+    </div>
 
+    <!-- BOTÕES GERAIS (SEM ABA) -->
     <br>
     <button onclick="sair()">Sair</button>
     
     <!-- BOTÃO RECOMEÇAR (SÓ APARECE PARA PIRES) -->
     <br><br>
-    <button id="btnRecomecar" onclick="recomecarTudo()">
+    <button id="btnRecomecar" onclick="recomecarTudo()" style="display: none;">
       🔥 RECOMEÇAR TUDO (APENAS ADM)
     </button>
   </div>
