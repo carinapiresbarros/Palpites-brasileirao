@@ -1,3 +1,6 @@
+// VARIÁVEL GLOBAL PARA CONTROLAR A ABA ATUAL
+let abaAtual = 'palpites';
+
 function entrar() {
   const nome = document.getElementById("nome").value.trim();
   if (!nome) {
@@ -28,33 +31,80 @@ function mostrarPainel() {
   document.getElementById("painel").style.display = "block";
   document.getElementById("bemvindo").innerText = "Bem-vindo, " + usuario;
 
-  // MOSTRAR OU ESCONDER BOTÃO RECOMEÇAR (SÓ PARA PIRES)
-  const btnRecomecar = document.getElementById("btnRecomecar");
-  if (usuario.toLowerCase() === "pires") {
-    btnRecomecar.style.display = "inline-block";
-  } else {
-    btnRecomecar.style.display = "none";
-  }
-
+  // CONFIGURAR ACESSO DO ADM
+  configurarAcessoAdm(usuario);
+  
   renderParticipantes();
-  renderRodadas();
+  renderRodadasPalpites();
+  renderRodadasResultados();
+}
+
+function configurarAcessoAdm(usuario) {
+  const btnRecomecar = document.getElementById("btnRecomecar");
+  const abaResultadosElement = document.getElementById("abaResultados");
+  
+  if (usuario.toLowerCase() === "pires") {
+    // MOSTRAR BOTÃO RECOMEÇAR
+    btnRecomecar.style.display = "inline-block";
+    
+    // MOSTRAR ABA RESULTADOS
+    abaResultadosElement.style.display = "block";
+    abaResultadosElement.classList.add("aba-adm");
+  } else {
+    // ESCONDER BOTÃO RECOMEÇAR
+    btnRecomecar.style.display = "none";
+    
+    // ESCONDER ABA RESULTADOS
+    abaResultadosElement.style.display = "none";
+    
+    // GARANTIR QUE ESTÁ NA ABA PALPITES
+    mudarAba('palpites');
+  }
+}
+
+function mudarAba(nomeAba) {
+  const usuario = localStorage.getItem("usuario");
+  
+  // SE NÃO É PIRES E TENTA ACESSAR RESULTADOS, BLOQUEIA
+  if (nomeAba === 'resultados' && usuario.toLowerCase() !== "pires") {
+    alert("⚠️ Apenas o administrador Pires pode acessar os resultados!");
+    return;
+  }
+  
+  // ATUALIZA ABA ATUAL
+  abaAtual = nomeAba;
+  
+  // ATUALIZA VISUAL DAS ABAS
+  document.querySelectorAll('.aba').forEach(aba => {
+    aba.classList.remove('ativa');
+  });
+  
+  document.querySelectorAll('.conteudo-aba').forEach(conteudo => {
+    conteudo.classList.remove('ativa');
+  });
+  
+  // ATIVA ABA SELECIONADA
+  document.querySelector(`.aba[onclick*="${nomeAba}"]`).classList.add('ativa');
+  document.getElementById(`conteudo-${nomeAba}`).classList.add('ativa');
+  
+  // SE MUDOU PARA RESULTADOS, ATUALIZA A LISTA
+  if (nomeAba === 'resultados') {
+    renderRodadasResultados();
+  }
 }
 
 function recomecarTudo() {
   const usuario = localStorage.getItem("usuario");
   
-  // VERIFICA SE É O PIRES (ADM)
   if (usuario.toLowerCase() !== "pires") {
     alert("⚠️ Apenas o administrador Pires pode recomeçar tudo!");
     return;
   }
   
-  // CONFIRMAÇÃO 1
   const confirm1 = confirm("⚠️ ATENÇÃO PIRES! ⚠️\n\nVocê está prestes a APAGAR TODOS os dados:\n\n• Todas as rodadas\n• Todos os jogos\n• Todos os palpites\n• Todos os pontos\n\nApenas os nomes dos participantes serão mantidos.\n\nContinuar?");
   
   if (!confirm1) return;
   
-  // CONFIRMAÇÃO 2 (EXTRA SEGURANÇA)
   const confirm2 = confirm("🚨 CONFIRMAÇÃO FINAL 🚨\n\nDigite 'SIM' no próximo prompt para confirmar:");
   
   if (!confirm2) return;
@@ -66,23 +116,17 @@ function recomecarTudo() {
     return;
   }
   
-  // LIMPEZA SELETIVA DO LOCALSTORAGE
-  // Mantém apenas 'participantes' e 'usuario' atual
   const participantes = JSON.parse(localStorage.getItem("participantes")) || [];
   const usuarioAtual = localStorage.getItem("usuario");
   
-  // Limpa tudo
   localStorage.clear();
   
-  // Restaura apenas o necessário
   localStorage.setItem("participantes", JSON.stringify(participantes));
   if (usuarioAtual) {
     localStorage.setItem("usuario", usuarioAtual);
   }
   
-  alert("✅ Tudo foi recomeçado!\n\nAs rodadas, jogos, palpites e pontos foram removidos.\nOs participantes cadastrados foram mantidos.");
-  
-  // Recarrega a página
+  alert("✅ Tudo foi recomeçado!");
   location.reload();
 }
 
@@ -107,7 +151,8 @@ function criarRodada() {
   localStorage.setItem("rodadas", JSON.stringify(rodadas));
 
   document.getElementById("nomeRodada").value = "";
-  renderRodadas();
+  renderRodadasPalpites();
+  renderRodadasResultados();
 }
 
 function adicionarJogo(index) {
@@ -119,7 +164,8 @@ function adicionarJogo(index) {
   rodadas[index].jogos.push({ casa, fora, resultado: "" });
   localStorage.setItem("rodadas", JSON.stringify(rodadas));
 
-  renderRodadas();
+  renderRodadasPalpites();
+  renderRodadasResultados();
 }
 
 function salvarResultado(r, j, valor) {
@@ -128,7 +174,8 @@ function salvarResultado(r, j, valor) {
   localStorage.setItem("rodadas", JSON.stringify(rodadas));
   
   calcularTodosOsPontos();
-  renderRodadas();
+  renderRodadasPalpites();
+  renderRodadasResultados();
 }
 
 function salvarPalpite(r, j, valor) {
@@ -142,7 +189,7 @@ function salvarPalpite(r, j, valor) {
   localStorage.setItem("palpites", JSON.stringify(palpites));
   
   calcularPontosUsuario(usuario);
-  renderRodadas();
+  renderRodadasPalpites();
 }
 
 function obterPalpite(r, j) {
@@ -224,52 +271,12 @@ function obterPontosUsuario(usuario, r, j) {
   return pontos[usuario]?.detalhes?.[r]?.[j] || 0;
 }
 
-function renderRodadas() {
-  const container = document.getElementById("rodadas");
+// FUNÇÃO PARA RENDERIZAR RODADAS NA ABA PALPITES
+function renderRodadasPalpites() {
+  const container = document.getElementById("rodadas-palpites");
   container.innerHTML = "";
   
   const usuario = localStorage.getItem("usuario");
   const rodadas = JSON.parse(localStorage.getItem("rodadas")) || [];
   const pontosUsuario = JSON.parse(localStorage.getItem("pontos")) || {};
-  const totalUsuario = pontosUsuario[usuario]?.total || 0;
-
-  if (usuario) {
-    container.innerHTML += `<h3>🏆 Sua pontuação total: ${totalUsuario} pontos</h3>`;
-  }
-
-  rodadas.forEach((rodada, r) => {
-    const div = document.createElement("div");
-    div.className = "rodada";
-    
-    let html = `<strong>${rodada.nome}</strong><br><br>
-      <input id="casa-${r}" placeholder="Time da casa">
-      <input id="fora-${r}" placeholder="Time visitante">
-      <button onclick="adicionarJogo(${r})">Adicionar jogo</button><br><br>`;
-    
-    rodada.jogos.forEach((jogo, j) => {
-      const resultadoAtual = jogo.resultado || "";
-      const pontosJogo = obterPontosUsuario(usuario, r, j);
-      
-      html += `
-        <div class="jogo">
-          ⚽ ${jogo.casa} x ${jogo.fora}
-          <br>
-          🔵 Resultado real: 
-          <input size="4" value="${resultadoAtual}" 
-            placeholder="0x0"
-            oninput="salvarResultado(${r}, ${j}, this.value)">
-          <br>
-          📝 Seu palpite: 
-          <input size="4" value="${obterPalpite(r, j)}" 
-            placeholder="0x0"
-            oninput="salvarPalpite(${r}, ${j}, this.value)">
-          ${pontosJogo > 0 ? `<span class="pontos">+${pontosJogo} pontos</span>` : ''}
-        </div>`;
-    });
-    
-    div.innerHTML = html;
-    container.appendChild(div);
-  });
-}
-
-mostrarPainel();
+  const totalUsuario = pontosUsuario[usuario]
